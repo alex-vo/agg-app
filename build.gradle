@@ -31,7 +31,8 @@ dependencies {
     compile 'org.modelmapper:modelmapper:2.3.2'
     compile 'com.google.guava:guava:27.1-jre'
 
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile 'junit:junit:4.12'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
     testCompile 'com.jayway.restassured:rest-assured:2.9.0'
+    testCompile 'org.awaitility:awaitility:3.1.6'
 }

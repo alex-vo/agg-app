@@ -1,4 +1,6 @@
 *.iml
 .idea/
+out/
+build/
 
 src/main/resources/local.properties

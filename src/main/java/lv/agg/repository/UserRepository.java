@@ -17,4 +17,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
             "left join fetch u.services " +
             "where u.email=:email")
     Optional<UserEntity> findUserWithServicesByEmail(@Param("email") String email);
+
+    Optional<UserEntity> findByRefreshToken(String token);
 }

@@ -28,4 +28,6 @@ public class UserEntity {
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "service_id", referencedColumnName = "id"))
     private List<ServiceEntity> services;
+    @Column
+    private String refreshToken;
 }
