@@ -11,7 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AggregatorStartup implements ApplicationRunner {
+public class AppStartupRunner implements ApplicationRunner {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -25,19 +25,25 @@ public class AggregatorStartup implements ApplicationRunner {
         ServiceEntity s = new ServiceEntity();
         s.setName("haircut");
         s.setId(1L);
-        serviceRepository.saveAndFlush(s);
+        serviceRepository.save(s);
 
-        UserEntity serviceProvider = new UserEntity();
-        serviceProvider.setEmail("service_provider@mail.com");
-        serviceProvider.setPassword(passwordEncoder.encode("123"));
-        serviceProvider.setUserRole(UserEntity.UserRole.ROLE_SERVICE_PROVIDER);
-        serviceProvider.setServices(serviceRepository.findAll());
-        userRepository.saveAndFlush(serviceProvider);
+        UserEntity merchant = new UserEntity();
+        merchant.setEmail("merchant@mail.com");
+        merchant.setPassword(passwordEncoder.encode("123"));
+        merchant.setUserRole(UserEntity.UserRole.ROLE_MERCHANT);
+        merchant.setServices(serviceRepository.findAll());
+        userRepository.save(merchant);
 
         UserEntity customer = new UserEntity();
         customer.setEmail("customer@mail.com");
         customer.setPassword(passwordEncoder.encode("123"));
         customer.setUserRole(UserEntity.UserRole.ROLE_CUSTOMER);
-        userRepository.saveAndFlush(customer);
+        userRepository.save(customer);
+
+        UserEntity admin = new UserEntity();
+        admin.setEmail("admin@mail.com");
+        admin.setPassword(passwordEncoder.encode("123"));
+        admin.setUserRole(UserEntity.UserRole.ROLE_ADMIN);
+        userRepository.save(admin);
     }
 }

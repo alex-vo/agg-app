@@ -39,6 +39,7 @@ public class AvailabilityController {
             @RequestParam("dateFrom") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime dateFrom,
             @RequestParam("dateTo") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime dateTo
     ) {
+        //TODO location
         return availabilityService.findAvailabiltySlots(serviceId, dateFrom, dateTo)
                 .asRanges()
                 .stream()
@@ -51,11 +52,23 @@ public class AvailabilityController {
                 .collect(Collectors.toList());
     }
 
-    @Secured("ROLE_SERVICE_PROVIDER")
+    @Secured("ROLE_MERCHANT")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void createAvailability(@RequestBody @Valid AvailabilitySlotDTO availabilitySlotDTO) {
         availabilityService.createAvailability(availabilitySlotDTO);
+    }
+
+    @Secured("ROLE_MERCHANT")
+    @PutMapping("{id}")
+    public void updateAvailability(@PathVariable("id") Long availabilityId, @RequestBody @Valid AvailabilitySlotDTO availabilitySlotDTO) {
+        availabilityService.updateAvailability(availabilityId, availabilitySlotDTO);
+    }
+
+    @Secured("ROLE_MERCHANT")
+    @DeleteMapping("{id}")
+    public void deleteAvailability(@PathVariable("id") Long availabilityId) {
+        availabilityService.deleteAvailabitiy(availabilityId);
     }
 
 }

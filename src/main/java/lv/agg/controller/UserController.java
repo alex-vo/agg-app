@@ -43,7 +43,7 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void register(@Valid UserProfileDTO userProfileDTO) {
+    public void register(@RequestBody @Valid UserProfileDTO userProfileDTO) {
         userService.register(userProfileDTO);
         log.info("Created profile {}", userProfileDTO.getEmail());
     }

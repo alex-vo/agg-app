@@ -7,12 +7,12 @@ import lv.agg.entity.UserEntity;
 import lv.agg.repository.UserRepository;
 import lv.agg.security.JwtTokenProvider;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.tomcat.util.security.MD5Encoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -26,6 +26,8 @@ public class UserService {
     private UserRepository userRepository;
     @Autowired
     private JwtTokenProvider tokenProvider;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public void register(UserProfileDTO userProfileDTO) {
         userRepository.findByEmail(userProfileDTO.getEmail()).ifPresent(e -> {
@@ -33,7 +35,17 @@ public class UserService {
         });
         UserEntity user = new UserEntity();
         user.setEmail(userProfileDTO.getEmail());
-        user.setPassword(MD5Encoder.encode(userProfileDTO.getPassword().getBytes()));
+        user.setPassword(passwordEncoder.encode(userProfileDTO.getPassword()));
+        user.setUserRole(userProfileDTO.getUserRole());
+        if (UserEntity.UserRole.ROLE_MERCHANT.equals(userProfileDTO.getUserRole())) {
+            user.setMerchantType(userProfileDTO.getIsCompany() ? UserEntity.MerchantType.COMPANY : UserEntity.MerchantType.INDIVIDUAL);
+            if (userProfileDTO.getIsCompany()) {
+                user.setCompanyName(userProfileDTO.getCompanyName());
+            }
+        }
+        user.setAddress(userProfileDTO.getAddress());
+        user.setFirstName(userProfileDTO.getFirstName());
+        user.setLastName(userProfileDTO.getLastName());
         userRepository.save(user);
     }
 

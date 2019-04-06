@@ -15,5 +15,7 @@ public interface ServiceRepository extends JpaRepository<ServiceEntity, Long> {
             "from ServiceEntity s " +
             "left join fetch s.users " +
             "where s.name=:name ")
-    Optional<ServiceEntity> findASDdasdasdsad(@Param("name") String name);
+    Optional<ServiceEntity> findByName(@Param("name") String name);
+
+    List<ServiceEntity> findByIdIn(List<Long> ids);
 }

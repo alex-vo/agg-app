@@ -10,7 +10,11 @@ import java.util.List;
 public class UserEntity {
 
     public enum UserRole {
-        ROLE_CUSTOMER, ROLE_SERVICE_PROVIDER
+        ROLE_CUSTOMER, ROLE_MERCHANT, ROLE_ADMIN
+    }
+
+    public enum MerchantType {
+        INDIVIDUAL, COMPANY
     }
 
     @Id
@@ -30,4 +34,14 @@ public class UserEntity {
     private List<ServiceEntity> services;
     @Column
     private String refreshToken;
+    @Enumerated(EnumType.STRING)
+    private MerchantType merchantType;
+    @Column
+    private String companyName;
+    @Column
+    private String address;
+    @Column
+    private String firstName;
+    @Column
+    private String lastName;
 }

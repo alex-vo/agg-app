@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class UserProfileDTOValidator implements Validator {
 
-    public static final Integer PASSWORD_MIN_LENGTH = 6;
+    public static final Integer PASSWORD_MIN_LENGTH = 5;
     public static final Pattern EMAIL_REGEX = Pattern.compile("^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$");
 
     @Override
@@ -28,7 +28,7 @@ public class UserProfileDTOValidator implements Validator {
             if (StringUtils.length(dto.getPassword()) < PASSWORD_MIN_LENGTH) {
                 errors.reject("Password too short");
             }
-            if (StringUtils.equals(dto.getPassword(), dto.getPasswordRepeat())) {
+            if (!StringUtils.equals(dto.getPassword(), dto.getPasswordRepeat())) {
                 errors.reject("Passwords do not match");
             }
             if (StringUtils.isBlank(dto.getEmail()) || !EMAIL_REGEX.matcher(dto.getEmail()).matches()) {

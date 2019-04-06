@@ -9,16 +9,16 @@ import java.time.ZonedDateTime;
 @Data
 public class AppointmentEntity {
 
-    public enum Status {
-        NEW, CONFIRMED, DECLINED
+    public static enum Status {
+        NEW, CONFIRMED, DECLINED, CANCELLED
     }
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_provider")
-    private UserEntity serviceProvider;
+    @JoinColumn(name = "merchant_id")
+    private UserEntity merchant;
     @Column(nullable = false)
     private ZonedDateTime dateFrom;
     @Column(nullable = false)
@@ -27,7 +27,7 @@ public class AppointmentEntity {
     @Enumerated(EnumType.STRING)
     private Status status;
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer")
+    @JoinColumn(name = "customer_id")
     private UserEntity customer;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service")

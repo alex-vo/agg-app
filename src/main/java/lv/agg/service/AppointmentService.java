@@ -2,6 +2,7 @@ package lv.agg.service;
 
 import lv.agg.configuration.AggregatorAppPrincipal;
 import lv.agg.dto.AppointmentDTO;
+import lv.agg.dto.mapping.AppointmentDTOMapper;
 import lv.agg.entity.AppointmentEntity;
 import lv.agg.entity.ServiceEntity;
 import lv.agg.entity.UserEntity;
@@ -29,27 +30,16 @@ public class AppointmentService {
     public List<AppointmentDTO> searchCustomerAppointments(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
         Long customerId = ((AggregatorAppPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
         return appointmentRepository.findCustomerAppointments(customerId, dateFrom, dateTo).stream()
-                .map(this::toAppointmentDTO)
+                .map(AppointmentDTOMapper::map)
                 .collect(Collectors.toList());
     }
 
-    public List<AppointmentDTO> searchServiceProviderAppointments(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
-        Long serviceProviderId = ((AggregatorAppPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
-        return appointmentRepository.findServiceProviderAppointments(serviceProviderId, dateFrom, dateTo)
+    public List<AppointmentDTO> searchMerchantAppointments(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
+        Long merchantId = ((AggregatorAppPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
+        return appointmentRepository.findMerchantAppointments(merchantId, dateFrom, dateTo)
                 .stream()
-                .map(this::toAppointmentDTO)
+                .map(AppointmentDTOMapper::map)
                 .collect(Collectors.toList());
-    }
-
-    //TODO separate mapping
-    private AppointmentDTO toAppointmentDTO(AppointmentEntity e) {
-        AppointmentDTO dto = new AppointmentDTO();
-        dto.setFrom(e.getDateFrom());
-        dto.setTo(e.getDateTo());
-        dto.setServiceId(e.getService().getId());
-        dto.setServiceProviderId(e.getServiceProvider().getId());
-        dto.setStatus(e.getStatus().name());
-        return dto;
     }
 
     public Long createAppointment(AppointmentDTO appointmentDTO) {
@@ -58,10 +48,10 @@ public class AppointmentService {
                 .orElseThrow(RuntimeException::new);
         ServiceEntity serviceEntity = serviceRepository.findById(appointmentDTO.getServiceId())
                 .orElseThrow(RuntimeException::new);
-        UserEntity serviceProvider = userRepository.findById(appointmentDTO.getServiceProviderId())
+        UserEntity merchant = userRepository.findById(appointmentDTO.getMerchantId())
                 .orElseThrow(RuntimeException::new);
-        List<AppointmentEntity> userAppointments = appointmentRepository.findClashingAppointments(serviceProvider.getId(),
-                appointmentDTO.getFrom(), appointmentDTO.getTo());
+        List<AppointmentEntity> userAppointments = appointmentRepository.findClashingMerchantAppointments(merchant.getId(),
+                AppointmentEntity.Status.CONFIRMED, appointmentDTO.getFrom(), appointmentDTO.getTo());
         if (userAppointments.stream().anyMatch(e -> e.getStatus() == AppointmentEntity.Status.CONFIRMED)) {
             throw new RuntimeException();
         }
@@ -69,7 +59,7 @@ public class AppointmentService {
         appointmentEntity.setDateFrom(appointmentDTO.getFrom());
         appointmentEntity.setDateTo(appointmentDTO.getTo());
         appointmentEntity.setService(serviceEntity);
-        appointmentEntity.setServiceProvider(serviceProvider);
+        appointmentEntity.setMerchant(merchant);
         appointmentEntity.setCustomer(consumer);
         appointmentEntity.setStatus(AppointmentEntity.Status.NEW);
         appointmentEntity = appointmentRepository.save(appointmentEntity);
@@ -77,19 +67,14 @@ public class AppointmentService {
         return appointmentEntity.getId();
     }
 
-    public void confirmAppointment(Long appointmentId) {
-        Long serviceProviderId = ((AggregatorAppPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
-        AppointmentEntity appointmentEntity = appointmentRepository.findNewAppointment(appointmentId, serviceProviderId,
-                AppointmentEntity.Status.NEW)
-                .orElseThrow(RuntimeException::new);
-        appointmentEntity.setStatus(AppointmentEntity.Status.CONFIRMED);
-        appointmentRepository.save(appointmentEntity);
-    }
-
     public AppointmentDTO getAppointmentById(Long appointmentId) {
         AppointmentEntity appointmentEntity = appointmentRepository.findById(appointmentId)
                 .orElseThrow(RuntimeException::new);
-        return toAppointmentDTO(appointmentEntity);
+        Long customerId = ((AggregatorAppPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
+        if (!appointmentEntity.getCustomer().getId().equals(customerId)) {
+            throw new RuntimeException();
+        }
+        return AppointmentDTOMapper.map(appointmentEntity);
     }
 
     public void updateApppointment(Long id, AppointmentDTO appointmentDTO) {
@@ -101,6 +86,44 @@ public class AppointmentService {
 
     public void deleteAppointment(Long id) {
         appointmentRepository.deleteById(id);
+    }
+
+    public void confirmAppointment(Long appointmentId) {
+        AppointmentEntity appointmentEntity = findMerchantsAppointment(appointmentId);
+        if (appointmentEntity.getStatus() != AppointmentEntity.Status.NEW) {
+            throw new RuntimeException();
+        }
+        appointmentEntity.setStatus(AppointmentEntity.Status.CONFIRMED);
+        appointmentRepository.save(appointmentEntity);
+    }
+
+    public void declineAppointment(Long appointmentId) {
+        AppointmentEntity appointmentEntity = findMerchantsAppointment(appointmentId);
+        if (appointmentEntity.getStatus() != AppointmentEntity.Status.NEW) {
+            throw new RuntimeException();
+        }
+        appointmentEntity.setStatus(AppointmentEntity.Status.DECLINED);
+        appointmentRepository.save(appointmentEntity);
+    }
+
+    public void cancelAppointment(Long appointmentId) {
+        AppointmentEntity appointmentEntity = findMerchantsAppointment(appointmentId);
+        if (appointmentEntity.getStatus() != AppointmentEntity.Status.CONFIRMED) {
+            throw new RuntimeException();
+        }
+        appointmentEntity.setStatus(AppointmentEntity.Status.CANCELLED);
+        appointmentRepository.save(appointmentEntity);
+    }
+
+    private AppointmentEntity findMerchantsAppointment(Long appointmentId) {
+        AppointmentEntity appointmentEntity = appointmentRepository.findById(appointmentId)
+                .orElseThrow(RuntimeException::new);
+        Long merchantId = ((AggregatorAppPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
+        if (!appointmentEntity.getMerchant().getId().equals(merchantId)) {
+            throw new RuntimeException();
+        }
+
+        return appointmentEntity;
     }
 
 }

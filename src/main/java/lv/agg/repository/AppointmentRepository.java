@@ -15,31 +15,33 @@ public interface AppointmentRepository extends JpaRepository<AppointmentEntity, 
 
     @Query("select a " +
             "from AppointmentEntity a " +
-            "where a.id=:appointmentId and a.serviceProvider.id=:serviceProviderId and a.status=:status")
-    Optional<AppointmentEntity> findNewAppointment(
+            "where a.id=:appointmentId and a.merchant.id=:merchantId and a.status=:status")
+    Optional<AppointmentEntity> findAppointment(
             @Param("appointmentId") Long appointmentId,
-            @Param("serviceProviderId") Long serviceProviderId,
+            @Param("merchantId") Long merchantId,
             @Param("status") AppointmentEntity.Status status
     );
 
     @Query("select a " +
             "from AppointmentEntity a " +
-            "where a.serviceProvider.id=:serviceProviderId " +
+            "where a.merchant.id=:merchantId " +
             "and a.dateFrom >= :dateFrom " +
             "and a.dateTo <= :dateTo")
-    List<AppointmentEntity> findServiceProviderAppointments(
-            @Param("serviceProviderId") Long serviceProviderId,
+    List<AppointmentEntity> findMerchantAppointments(
+            @Param("merchantId") Long merchantId,
             @Param("dateFrom") ZonedDateTime dateFrom,
             @Param("dateTo") ZonedDateTime dateTo
     );
 
     @Query("select a " +
             "from AppointmentEntity a " +
-            "where a.serviceProvider.id=:serviceProviderId " +
+            "where a.merchant.id=:merchantId " +
+            "and a.status=:status " +
             "and ((a.dateFrom<=:dateFrom and a.dateTo>=:dateFrom) " +
             "or (a.dateFrom<=:dateTo and a.dateTo>=:dateTo))")
-    List<AppointmentEntity> findClashingAppointments(
-            @Param("serviceProviderId") Long serviceProviderId,
+    List<AppointmentEntity> findClashingMerchantAppointments(
+            @Param("merchantId") Long merchantId,
+            @Param("status") AppointmentEntity.Status status,
             @Param("dateFrom") ZonedDateTime dateFrom,
             @Param("dateTo") ZonedDateTime dateTo
     );

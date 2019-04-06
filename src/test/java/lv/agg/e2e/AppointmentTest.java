@@ -44,8 +44,8 @@ public class AppointmentTest {
 
     @Test
     public void testCreateAppointment() {
-        Long serviceId = serviceRepository.findASDdasdasdsad("haircut").get().getId();
-        Long serviceProviderId = userRepository.findByEmail("service_provider@mail.com").get().getId();
+        Long serviceId = serviceRepository.findByName("haircut").get().getId();
+        Long merchantId = userRepository.findByEmail("merchant@mail.com").get().getId();
 
         AvailabilitySlotDTO availabilitySlotDTO = new AvailabilitySlotDTO();
         TimeSlotDTO timeSlotDTO = new TimeSlotDTO();
@@ -53,7 +53,7 @@ public class AppointmentTest {
         timeSlotDTO.setDateTo(ZonedDateTime.now().plusHours(5));
         availabilitySlotDTO.setTimeSlotDTO(timeSlotDTO);
         availabilitySlotDTO.setServiceId(serviceId);
-        availabilitySlotDTO.setUserId(serviceProviderId);
+        availabilitySlotDTO.setUserId(merchantId);
         given().auth().preemptive().basic("service_provider", "123").when()
                 .contentType(ContentType.JSON)
                 .body(availabilitySlotDTO)
@@ -62,7 +62,7 @@ public class AppointmentTest {
                 .statusCode(201);
 
         AppointmentDTO appointmentDTO = new AppointmentDTO();
-        appointmentDTO.setServiceProviderId(serviceProviderId);
+        appointmentDTO.setMerchantId(merchantId);
         appointmentDTO.setServiceId(serviceId);
         appointmentDTO.setFrom(ZonedDateTime.now().minusHours(1));
         appointmentDTO.setTo(ZonedDateTime.now().plusHours(1));
@@ -88,7 +88,7 @@ public class AppointmentTest {
                 .then()
                 .statusCode(201);
         AppointmentDTO[] foundAppointments = given().auth().preemptive().basic("customer", "123").when()
-                .get("/api/v1/customer/appointment?serviceProviderId=" + serviceProviderId
+                .get("/api/v1/customer/appointment?merchantId=" + merchantId
                         + "&dateFrom=" + ISO_DATE_TIME.format(ZonedDateTime.now().minusHours(2))
                         + "&dateTo=" + ISO_DATE_TIME.format(ZonedDateTime.now().plusHours(2))
                 )
@@ -108,7 +108,7 @@ public class AppointmentTest {
         given().auth().preemptive().basic("service_provider", "123").when()
                 .contentType(ContentType.JSON)
                 .body(appointmentDTO)
-                .post("/api/v1/serviceprovider/appointment/" + createdAppointmentId + "/confirm")
+                .post("/api/v1/merchant/appointment/" + createdAppointmentId + "/confirm")
                 .then()
                 .statusCode(201);
         given().auth().preemptive().basic("customer", "123").when()

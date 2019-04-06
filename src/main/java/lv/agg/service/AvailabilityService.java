@@ -3,6 +3,7 @@ package lv.agg.service;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
+import lv.agg.configuration.AggregatorAppPrincipal;
 import lv.agg.dto.AvailabilitySlotDTO;
 import lv.agg.entity.AppointmentEntity;
 import lv.agg.entity.AvailabilitySlotEntity;
@@ -10,7 +11,9 @@ import lv.agg.repository.AppointmentRepository;
 import lv.agg.repository.AvailabilityRepository;
 import lv.agg.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -49,14 +52,15 @@ public class AvailabilityService {
             ZonedDateTime from,
             ZonedDateTime to
     ) {
-        userAvailableTime.forEach((key, value) -> appointmentRepository.findServiceProviderAppointments(key, from, to)
+        userAvailableTime.forEach((key, value) -> appointmentRepository.findMerchantAppointments(key, from, to)
                 .stream()
                 .filter(e -> e.getStatus() == AppointmentEntity.Status.CONFIRMED)
                 .forEach(a -> value.remove(Range.closed(a.getDateFrom(), a.getDateTo()))));
     }
 
     public void createAvailability(AvailabilitySlotDTO availabilitySlotDTO) {
-        //TODO check if user can provide this service           availabilitySlotDTO.getServiceId()
+        //TODO check if user can provide this service           availabilitySlotDTO.getServiceId
+        //TODO check clashing availability slots
         AvailabilitySlotEntity availabilitySlotEntity = new AvailabilitySlotEntity();
         availabilitySlotEntity.setDateFrom(availabilitySlotDTO.getTimeSlotDTO().getDateFrom());
         availabilitySlotEntity.setDateTo(availabilitySlotDTO.getTimeSlotDTO().getDateTo());
@@ -66,15 +70,33 @@ public class AvailabilityService {
     }
 
     public void updateAvailability(Long id, AvailabilitySlotDTO availabilitySlotDTO) {
-        AvailabilitySlotEntity availabilitySlotEntity = availabilityRepository.findById(id)
+        AvailabilitySlotEntity slot = availabilityRepository.findById(id)
                 .orElseThrow(RuntimeException::new);
-        availabilitySlotEntity.setDateFrom(availabilitySlotDTO.getTimeSlotDTO().getDateFrom());
-        availabilitySlotEntity.setDateTo(availabilitySlotDTO.getTimeSlotDTO().getDateTo());
-        availabilityRepository.save(availabilitySlotEntity);
+        if (availabilitySlotDTO.getTimeSlotDTO().getDateFrom().isAfter(slot.getDateFrom())) {
+            ensureNoClashingAppointments(slot.getDateFrom(), availabilitySlotDTO.getTimeSlotDTO().getDateFrom());
+        }
+        if (availabilitySlotDTO.getTimeSlotDTO().getDateTo().isBefore(slot.getDateTo())) {
+            ensureNoClashingAppointments(availabilitySlotDTO.getTimeSlotDTO().getDateTo(), slot.getDateTo());
+        }
+        slot.setDateFrom(availabilitySlotDTO.getTimeSlotDTO().getDateFrom());
+        slot.setDateTo(availabilitySlotDTO.getTimeSlotDTO().getDateTo());
+        availabilityRepository.save(slot);
     }
 
     public void deleteAvailabitiy(Long id) {
+        AvailabilitySlotEntity slot = availabilityRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Availability slot not found"));
+        ensureNoClashingAppointments(slot.getDateFrom(), slot.getDateTo());
         availabilityRepository.deleteById(id);
+    }
+
+    private void ensureNoClashingAppointments(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
+        Long merchantId = ((AggregatorAppPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
+        List<AppointmentEntity> clashingAppointments = appointmentRepository.findClashingMerchantAppointments(merchantId,
+                AppointmentEntity.Status.CONFIRMED, dateFrom, dateTo);
+        if (!CollectionUtils.isEmpty(clashingAppointments)) {
+            throw new RuntimeException("Clashing appointment found");
+        }
     }
 
 }

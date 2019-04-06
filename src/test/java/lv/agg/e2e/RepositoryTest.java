@@ -31,11 +31,11 @@ public class RepositoryTest {
 //        u.setServices(serviceRepository.findAll());
 //        userRepository.saveAndFlush(u);
 
-        UserEntity serviceProvider = new UserEntity();
-        serviceProvider.setEmail("service_provider@mail.com");
-        serviceProvider.setPassword("123");
-        serviceProvider.setUserRole(UserEntity.UserRole.ROLE_SERVICE_PROVIDER);
-        userRepository.saveAndFlush(serviceProvider);
+        UserEntity merchant = new UserEntity();
+        merchant.setEmail("merchant@mail.com");
+        merchant.setPassword("123");
+        merchant.setUserRole(UserEntity.UserRole.ROLE_MERCHANT);
+        userRepository.saveAndFlush(merchant);
 
         UserEntity customer = new UserEntity();
         customer.setEmail("customer@mail.com");
@@ -49,12 +49,12 @@ public class RepositoryTest {
         s.setUsers(userRepository.findAll());
         serviceRepository.saveAndFlush(s);
 
-        UserEntity sp = userRepository.findUserWithServicesByEmail("service_provider@mail.com").get();
+        UserEntity sp = userRepository.findUserWithServicesByEmail("merchant@mail.com").get();
         sp.getServices()
                 .forEach(serviceEntity -> {
                     System.out.println(serviceEntity.getId() + " " + serviceEntity.getName());
                 });
-        ServiceEntity hc = serviceRepository.findASDdasdasdsad("haircut").get();
+        ServiceEntity hc = serviceRepository.findByName("haircut").get();
         System.out.println(hc.getName() + " " + hc.getId());
         hc.getUsers()
                 .forEach(userEntity -> {

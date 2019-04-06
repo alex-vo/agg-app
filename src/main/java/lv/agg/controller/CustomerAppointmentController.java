@@ -15,28 +15,30 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 @RestController
-@Secured("ROLE_CUSTOMER")
 @RequestMapping("api/v1/customer/appointment")
 public class CustomerAppointmentController {
 
     @Autowired
     private AppointmentService appointmentService;
 
+    @Secured("ROLE_CUSTOMER")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity createAppointment(@RequestBody AppointmentDTO appointmentDTO,
-                                            UriComponentsBuilder b) {
+                                            UriComponentsBuilder uriComponentsBuilder) {
         Long appointmentId = appointmentService.createAppointment(appointmentDTO);
-        return ResponseEntity.created(b.path("api/v1/customer/appointment/{id}")
+        return ResponseEntity.created(uriComponentsBuilder.path("api/v1/customer/appointment/{id}")
                 .buildAndExpand(appointmentId).toUri()).build();
     }
 
+    @Secured("ROLE_CUSTOMER")
     @GetMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public AppointmentDTO getCustomerAppointmentById(@PathVariable("id") Long appointmentId) {
         return appointmentService.getAppointmentById(appointmentId);
     }
 
+    @Secured("ROLE_CUSTOMER")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public List<AppointmentDTO> searchCustomerAppointments(

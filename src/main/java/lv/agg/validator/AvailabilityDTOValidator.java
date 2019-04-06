@@ -14,6 +14,10 @@ public class AvailabilityDTOValidator implements Validator {
 
     @Override
     public void validate(Object target, Errors errors) {
-//        errors.reject("AAAA");
+        AvailabilitySlotDTO dto = (AvailabilitySlotDTO) target;
+        if (dto.getTimeSlotDTO() == null || dto.getTimeSlotDTO().getDateFrom() == null
+                || dto.getTimeSlotDTO().getDateTo() == null) {
+            errors.reject("Availability dates not specified");
+        }
     }
 }
