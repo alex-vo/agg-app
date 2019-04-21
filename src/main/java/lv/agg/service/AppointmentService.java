@@ -6,6 +6,7 @@ import lv.agg.dto.mapping.AppointmentDTOMapper;
 import lv.agg.entity.AppointmentEntity;
 import lv.agg.entity.ServiceEntity;
 import lv.agg.entity.UserEntity;
+import lv.agg.enums.AppointmentStatus;
 import lv.agg.repository.AppointmentRepository;
 import lv.agg.repository.ServiceRepository;
 import lv.agg.repository.UserRepository;
@@ -51,8 +52,8 @@ public class AppointmentService {
         UserEntity merchant = userRepository.findById(appointmentDTO.getMerchantId())
                 .orElseThrow(RuntimeException::new);
         List<AppointmentEntity> userAppointments = appointmentRepository.findClashingMerchantAppointments(merchant.getId(),
-                AppointmentEntity.Status.CONFIRMED, appointmentDTO.getFrom(), appointmentDTO.getTo());
-        if (userAppointments.stream().anyMatch(e -> e.getStatus() == AppointmentEntity.Status.CONFIRMED)) {
+                AppointmentStatus.CONFIRMED, appointmentDTO.getFrom(), appointmentDTO.getTo());
+        if (userAppointments.stream().anyMatch(e -> e.getStatus() == AppointmentStatus.CONFIRMED)) {
             throw new RuntimeException();
         }
         AppointmentEntity appointmentEntity = new AppointmentEntity();
@@ -61,7 +62,7 @@ public class AppointmentService {
         appointmentEntity.setService(serviceEntity);
         appointmentEntity.setMerchant(merchant);
         appointmentEntity.setCustomer(consumer);
-        appointmentEntity.setStatus(AppointmentEntity.Status.NEW);
+        appointmentEntity.setStatus(AppointmentStatus.NEW);
         appointmentEntity = appointmentRepository.save(appointmentEntity);
 
         return appointmentEntity.getId();
@@ -88,30 +89,9 @@ public class AppointmentService {
         appointmentRepository.deleteById(id);
     }
 
-    public void confirmAppointment(Long appointmentId) {
+    public void updateAppointmentStatus(Long appointmentId, AppointmentStatus newAppointmentStatus) {
         AppointmentEntity appointmentEntity = findMerchantsAppointment(appointmentId);
-        if (appointmentEntity.getStatus() != AppointmentEntity.Status.NEW) {
-            throw new RuntimeException();
-        }
-        appointmentEntity.setStatus(AppointmentEntity.Status.CONFIRMED);
-        appointmentRepository.save(appointmentEntity);
-    }
-
-    public void declineAppointment(Long appointmentId) {
-        AppointmentEntity appointmentEntity = findMerchantsAppointment(appointmentId);
-        if (appointmentEntity.getStatus() != AppointmentEntity.Status.NEW) {
-            throw new RuntimeException();
-        }
-        appointmentEntity.setStatus(AppointmentEntity.Status.DECLINED);
-        appointmentRepository.save(appointmentEntity);
-    }
-
-    public void cancelAppointment(Long appointmentId) {
-        AppointmentEntity appointmentEntity = findMerchantsAppointment(appointmentId);
-        if (appointmentEntity.getStatus() != AppointmentEntity.Status.CONFIRMED) {
-            throw new RuntimeException();
-        }
-        appointmentEntity.setStatus(AppointmentEntity.Status.CANCELLED);
+        appointmentEntity.setStatus(newAppointmentStatus);
         appointmentRepository.save(appointmentEntity);
     }
 

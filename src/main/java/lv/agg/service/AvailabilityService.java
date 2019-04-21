@@ -7,6 +7,7 @@ import lv.agg.configuration.AggregatorAppPrincipal;
 import lv.agg.dto.AvailabilitySlotDTO;
 import lv.agg.entity.AppointmentEntity;
 import lv.agg.entity.AvailabilitySlotEntity;
+import lv.agg.enums.AppointmentStatus;
 import lv.agg.repository.AppointmentRepository;
 import lv.agg.repository.AvailabilityRepository;
 import lv.agg.repository.UserRepository;
@@ -54,7 +55,7 @@ public class AvailabilityService {
     ) {
         userAvailableTime.forEach((key, value) -> appointmentRepository.findMerchantAppointments(key, from, to)
                 .stream()
-                .filter(e -> e.getStatus() == AppointmentEntity.Status.CONFIRMED)
+                .filter(e -> e.getStatus() == AppointmentStatus.CONFIRMED)
                 .forEach(a -> value.remove(Range.closed(a.getDateFrom(), a.getDateTo()))));
     }
 
@@ -93,7 +94,7 @@ public class AvailabilityService {
     private void ensureNoClashingAppointments(ZonedDateTime dateFrom, ZonedDateTime dateTo) {
         Long merchantId = ((AggregatorAppPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
         List<AppointmentEntity> clashingAppointments = appointmentRepository.findClashingMerchantAppointments(merchantId,
-                AppointmentEntity.Status.CONFIRMED, dateFrom, dateTo);
+                AppointmentStatus.CONFIRMED, dateFrom, dateTo);
         if (!CollectionUtils.isEmpty(clashingAppointments)) {
             throw new RuntimeException("Clashing appointment found");
         }

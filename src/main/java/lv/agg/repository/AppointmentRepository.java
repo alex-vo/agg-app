@@ -1,6 +1,7 @@
 package lv.agg.repository;
 
 import lv.agg.entity.AppointmentEntity;
+import lv.agg.enums.AppointmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,7 +20,7 @@ public interface AppointmentRepository extends JpaRepository<AppointmentEntity, 
     Optional<AppointmentEntity> findAppointment(
             @Param("appointmentId") Long appointmentId,
             @Param("merchantId") Long merchantId,
-            @Param("status") AppointmentEntity.Status status
+            @Param("status") AppointmentStatus status
     );
 
     @Query("select a " +
@@ -41,7 +42,7 @@ public interface AppointmentRepository extends JpaRepository<AppointmentEntity, 
             "or (a.dateFrom<=:dateTo and a.dateTo>=:dateTo))")
     List<AppointmentEntity> findClashingMerchantAppointments(
             @Param("merchantId") Long merchantId,
-            @Param("status") AppointmentEntity.Status status,
+            @Param("status") AppointmentStatus status,
             @Param("dateFrom") ZonedDateTime dateFrom,
             @Param("dateTo") ZonedDateTime dateTo
     );

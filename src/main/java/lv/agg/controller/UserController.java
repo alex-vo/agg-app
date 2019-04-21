@@ -49,13 +49,14 @@ public class UserController {
     }
 
     @PutMapping
-    public void updateProfile(UserProfileDTO userProfileDTO) {
-        log.info("Updated profile");
+    public void updateProfile(@RequestBody @Valid UserProfileDTO userProfileDTO) {
+        userService.updateProfile(userProfileDTO);
+        log.info("Updated profile {}", userProfileDTO.getEmail());
     }
 
-    @DeleteMapping(value = "{id}")
+    @DeleteMapping()
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteProfile(@PathVariable("page") Long id) {
+    public void deleteProfile() {
         log.info("Deleted profile");
     }
 

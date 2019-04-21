@@ -7,6 +7,7 @@ import lv.agg.dto.AppointmentDTO;
 import lv.agg.dto.AvailabilitySlotDTO;
 import lv.agg.dto.TimeSlotDTO;
 import lv.agg.entity.AppointmentEntity;
+import lv.agg.enums.AppointmentStatus;
 import lv.agg.repository.ServiceRepository;
 import lv.agg.repository.UserRepository;
 import org.apache.commons.lang3.StringUtils;
@@ -95,7 +96,7 @@ public class AppointmentTest {
                 .then()
                 .statusCode(200).extract().as(AppointmentDTO[].class);
         assertThat(foundAppointments.length, is(2));
-        assertThat(Stream.of(foundAppointments).allMatch(o -> AppointmentEntity.Status.NEW.name().equals(o.getStatus())), is(true));
+        assertThat(Stream.of(foundAppointments).allMatch(o -> AppointmentStatus.NEW.name().equals(o.getStatus())), is(true));
         List timeSlots = given().auth().preemptive().basic("customer", "123").when()
                 .get("/api/v1/availability?serviceId=" + serviceId
                         + "&dateFrom=" + ISO_DATE_TIME.format(ZonedDateTime.now().minusDays(1))
@@ -121,7 +122,7 @@ public class AppointmentTest {
                 .get("/api/v1/customer/appointment/" + createdAppointmentId)
                 .then()
                 .statusCode(200).extract().as(AppointmentDTO.class);
-        assertThat(confirmedAppointment.getStatus(), is(AppointmentEntity.Status.CONFIRMED.name()));
+        assertThat(confirmedAppointment.getStatus(), is(AppointmentStatus.CONFIRMED.name()));
         timeSlots = given().auth().preemptive().basic("customer", "123").when()
                 .get("/api/v1/availability?serviceId=" + serviceId
                         + "&dateFrom=" + ISO_DATE_TIME.format(ZonedDateTime.now().minusDays(1))

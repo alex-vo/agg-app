@@ -1,6 +1,8 @@
 package lv.agg.entity;
 
 import lombok.Data;
+import lv.agg.enums.AppointmentStatus;
+import lv.agg.enums.AppointmentStatus;
 
 import javax.persistence.*;
 import java.time.ZonedDateTime;
@@ -8,10 +10,6 @@ import java.time.ZonedDateTime;
 @Entity
 @Data
 public class AppointmentEntity {
-
-    public static enum Status {
-        NEW, CONFIRMED, DECLINED, CANCELLED
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -25,7 +23,7 @@ public class AppointmentEntity {
     private ZonedDateTime dateTo;
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private AppointmentStatus status;
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
     private UserEntity customer;

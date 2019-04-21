@@ -4,6 +4,7 @@ import lv.agg.configuration.AggregatorAppPrincipal;
 import lv.agg.dto.JwtAuthenticationResponse;
 import lv.agg.dto.UserProfileDTO;
 import lv.agg.entity.UserEntity;
+import lv.agg.repository.ServiceRepository;
 import lv.agg.repository.UserRepository;
 import lv.agg.security.JwtTokenProvider;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -12,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,12 +30,26 @@ public class UserService {
     private JwtTokenProvider tokenProvider;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private ServiceRepository serviceRepository;
 
     public void register(UserProfileDTO userProfileDTO) {
         userRepository.findByEmail(userProfileDTO.getEmail()).ifPresent(e -> {
             throw new RuntimeException("Email already exists");
         });
         UserEntity user = new UserEntity();
+        setFieldValues(user, userProfileDTO);
+        userRepository.save(user);
+    }
+
+    public void updateProfile(UserProfileDTO userProfileDTO) {
+        Long merchantId = ((AggregatorAppPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
+        UserEntity user = userRepository.getOne(merchantId);
+        setFieldValues(user, userProfileDTO);
+        userRepository.save(user);
+    }
+
+    private void setFieldValues(UserEntity user, UserProfileDTO userProfileDTO) {
         user.setEmail(userProfileDTO.getEmail());
         user.setPassword(passwordEncoder.encode(userProfileDTO.getPassword()));
         user.setUserRole(userProfileDTO.getUserRole());
@@ -46,7 +62,7 @@ public class UserService {
         user.setAddress(userProfileDTO.getAddress());
         user.setFirstName(userProfileDTO.getFirstName());
         user.setLastName(userProfileDTO.getLastName());
-        userRepository.save(user);
+        user.setServices(serviceRepository.findByIdIn(userProfileDTO.getServiceIds()));
     }
 
     public JwtAuthenticationResponse login(String username, String password) {

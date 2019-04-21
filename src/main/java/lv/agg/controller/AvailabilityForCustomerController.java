@@ -1,38 +1,29 @@
 package lv.agg.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import lv.agg.dto.AvailabilitySlotDTO;
 import lv.agg.dto.TimeSlotDTO;
 import lv.agg.service.AvailabilityService;
-import lv.agg.validator.AvailabilityDTOValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.annotation.Secured;
-import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
+@Secured("ROLE_CUSTOMER")
 @RequestMapping("api/v1/availability")
 @Slf4j
-public class AvailabilityController {
+public class AvailabilityForCustomerController {
 
     @Autowired
     private AvailabilityService availabilityService;
-    @Autowired
-    private AvailabilityDTOValidator availabilityDTOValidator;
 
-    @InitBinder
-    protected void initBinder(WebDataBinder binder) {
-        binder.setValidator(availabilityDTOValidator);
-    }
-
-    @Secured("ROLE_CUSTOMER")
     @GetMapping
     public List<TimeSlotDTO> findTimeSlots(
             @RequestParam("serviceId") Long serviceId,
@@ -51,24 +42,4 @@ public class AvailabilityController {
                 })
                 .collect(Collectors.toList());
     }
-
-    @Secured("ROLE_MERCHANT")
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public void createAvailability(@RequestBody @Valid AvailabilitySlotDTO availabilitySlotDTO) {
-        availabilityService.createAvailability(availabilitySlotDTO);
-    }
-
-    @Secured("ROLE_MERCHANT")
-    @PutMapping("{id}")
-    public void updateAvailability(@PathVariable("id") Long availabilityId, @RequestBody @Valid AvailabilitySlotDTO availabilitySlotDTO) {
-        availabilityService.updateAvailability(availabilityId, availabilitySlotDTO);
-    }
-
-    @Secured("ROLE_MERCHANT")
-    @DeleteMapping("{id}")
-    public void deleteAvailability(@PathVariable("id") Long availabilityId) {
-        availabilityService.deleteAvailabitiy(availabilityId);
-    }
-
 }

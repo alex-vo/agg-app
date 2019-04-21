@@ -10,7 +10,7 @@ public class AppointmentDTOMapper {
         dto.setTo(appointmentEntity.getDateTo());
         dto.setServiceId(appointmentEntity.getService().getId());
         dto.setMerchantId(appointmentEntity.getMerchant().getId());
-        dto.setStatus(appointmentEntity.getStatus().name());
+        dto.setStatus(appointmentEntity.getStatus());
         return dto;
     }
 }

@@ -1,6 +1,7 @@
 package lv.agg.dto;
 
 import lombok.Data;
+import lv.agg.enums.AppointmentStatus;
 
 import java.time.ZonedDateTime;
 
@@ -10,5 +11,5 @@ public class AppointmentDTO {
     private Long merchantId;
     private ZonedDateTime from;
     private ZonedDateTime to;
-    private String status;
+    private AppointmentStatus status;
 }
