@@ -44,7 +44,7 @@ public class TokenAuthenticationTest {
                 .body(prepareUserProfileDTO("a1@aa.com", "12345", "12345", UserEntity.UserRole.ROLE_MERCHANT, false, "John", "Doe", "blabla", "Wall St. 1"))
                 .post("api/v1/user")
                 .then().statusCode(201);
-        testMerchantLogin("a1@aa.com", "12345");
+        testLogin("a1@aa.com", "12345", UserEntity.UserRole.ROLE_MERCHANT);
         UserEntity userEntity = userRepository.findByEmail("a1@aa.com").orElseThrow(RuntimeException::new);
         assertThat(userEntity.getUserRole(), is(UserEntity.UserRole.ROLE_MERCHANT));
         assertThat(userEntity.getMerchantType(), is(UserEntity.MerchantType.INDIVIDUAL));
@@ -61,7 +61,7 @@ public class TokenAuthenticationTest {
                 .body(prepareUserProfileDTO("a2@aa.com", "12345", "12345", UserEntity.UserRole.ROLE_MERCHANT, true, "John", "Doe", "company ltd", "Wall St. 1"))
                 .post("api/v1/user")
                 .then().statusCode(201);
-        testMerchantLogin("a2@aa.com", "12345");
+        testLogin("a2@aa.com", "12345", UserEntity.UserRole.ROLE_MERCHANT);
         UserEntity userEntity = userRepository.findByEmail("a2@aa.com").orElseThrow(RuntimeException::new);
         assertThat(userEntity.getUserRole(), is(UserEntity.UserRole.ROLE_MERCHANT));
         assertThat(userEntity.getMerchantType(), is(UserEntity.MerchantType.COMPANY));
@@ -78,7 +78,7 @@ public class TokenAuthenticationTest {
                 .body(prepareUserProfileDTO("a3@aa.com", "12345", "12345", UserEntity.UserRole.ROLE_CUSTOMER, true, "John", "Doe", "company ltd", "Wall St. 1"))
                 .post("api/v1/user")
                 .then().statusCode(201);
-        testMerchantLogin("a3@aa.com", "12345");
+        testLogin("a3@aa.com", "12345", UserEntity.UserRole.ROLE_CUSTOMER);
         UserEntity userEntity = userRepository.findByEmail("a3@aa.com").orElseThrow(RuntimeException::new);
         assertThat(userEntity.getUserRole(), is(UserEntity.UserRole.ROLE_CUSTOMER));
         assertThat(userEntity.getMerchantType(), is(nullValue()));
@@ -88,7 +88,7 @@ public class TokenAuthenticationTest {
         assertThat(userEntity.getAddress(), is("Wall St. 1"));
     }
 
-    private void testMerchantLogin(String username, String password) {
+    private void testLogin(String username, String password, UserEntity.UserRole userRole) {
         given().when()
                 .param("username", username)
                 .param("password", "wrong_password")
@@ -107,11 +107,12 @@ public class TokenAuthenticationTest {
         assertThat(accessToken, is(notNullValue()));
         assertThat(refreshToken, is(notNullValue()));
 
-        ServiceDTO[] services = given().header("Authorization", "Bearer " + accessToken).when().get("api/v1/service")
+        ServiceDTO[] services = given().header("Authorization", "Bearer " + accessToken)
+                .when()
+                .get("api/v1/" + (userRole == UserEntity.UserRole.ROLE_MERCHANT ? "merchant" : "customer") + "/service")
                 .then().statusCode(200)
                 .extract().as(ServiceDTO[].class);
-        assertThat(services.length, is(1));
-        assertThat(services[0].getName(), is("haircut"));
+        assertThat(services.length, is(2));
     }
 
     private UserProfileDTO prepareUserProfileDTO(String email, String password, String passwordRepeat,
@@ -149,11 +150,10 @@ public class TokenAuthenticationTest {
         assertThat(accessToken, is(notNullValue()));
         assertThat(refreshToken, is(notNullValue()));
 
-        ServiceDTO[] services = given().header("Authorization", "Bearer " + accessToken).when().get("api/v1/service")
+        ServiceDTO[] services = given().header("Authorization", "Bearer " + accessToken).when().get("api/v1/merchant/service")
                 .then().statusCode(200)
                 .extract().as(ServiceDTO[].class);
-        assertThat(services.length, is(1));
-        assertThat(services[0].getName(), is("haircut"));
+        assertThat(services.length, is(2));
 
         Awaitility.await().atMost(6, TimeUnit.SECONDS).until(() -> given()
                 .header("Authorization", "Bearer " + accessToken)
@@ -169,10 +169,9 @@ public class TokenAuthenticationTest {
         assertThat(newAccessToken, is(notNullValue()));
         assertThat(newRefreshToken, is(notNullValue()));
 
-        services = given().header("Authorization", "Bearer " + newAccessToken).when().get("api/v1/service")
+        services = given().header("Authorization", "Bearer " + newAccessToken).when().get("api/v1/merchant/service")
                 .then().statusCode(200)
                 .extract().as(ServiceDTO[].class);
-        assertThat(services.length, is(1));
-        assertThat(services[0].getName(), is("haircut"));
+        assertThat(services.length, is(2));
     }
 }

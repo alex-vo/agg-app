@@ -5,8 +5,8 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
 import lv.agg.dto.AppointmentDTO;
 import lv.agg.dto.AvailabilitySlotDTO;
+import lv.agg.dto.JwtAuthenticationResponse;
 import lv.agg.dto.TimeSlotDTO;
-import lv.agg.entity.AppointmentEntity;
 import lv.agg.enums.AppointmentStatus;
 import lv.agg.repository.ServiceRepository;
 import lv.agg.repository.UserRepository;
@@ -29,7 +29,12 @@ import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+                "app.jwtSecret=trolololololololololololo",
+                "app.jwtExpirationInMs=5000"
+        })
 @RunWith(SpringRunner.class)
 public class AppointmentTest {
 
@@ -55,7 +60,9 @@ public class AppointmentTest {
         availabilitySlotDTO.setTimeSlotDTO(timeSlotDTO);
         availabilitySlotDTO.setServiceId(serviceId);
         availabilitySlotDTO.setUserId(merchantId);
-        given().auth().preemptive().basic("service_provider", "123").when()
+        String merchantAccessToken = authorize("merchant@mail.com", "123");
+
+        given().header("Authorization", "Bearer " + merchantAccessToken).when()
                 .contentType(ContentType.JSON)
                 .body(availabilitySlotDTO)
                 .post("/api/v1/availability")
@@ -67,13 +74,14 @@ public class AppointmentTest {
         appointmentDTO.setServiceId(serviceId);
         appointmentDTO.setFrom(ZonedDateTime.now().minusHours(1));
         appointmentDTO.setTo(ZonedDateTime.now().plusHours(1));
-        given().auth().preemptive().basic("service_provider", "123").when()
+        given().header("Authorization", "Bearer " + merchantAccessToken).when()
                 .contentType(ContentType.JSON)
                 .body(appointmentDTO)
                 .post("/api/v1/customer/appointment")
                 .then()
                 .statusCode(403);
-        Response createdAppointmentResponse = given().auth().preemptive().basic("customer", "123").when()
+        String customerAccessToken = authorize("customer@mail.com", "123");
+        Response createdAppointmentResponse = given().header("Authorization", "Bearer " + customerAccessToken).when()
                 .contentType(ContentType.JSON)
                 .body(appointmentDTO)
                 .post("/api/v1/customer/appointment");
@@ -82,13 +90,13 @@ public class AppointmentTest {
         Long createdAppointmentId = Long.valueOf(location.substring(StringUtils.lastIndexOf(location, '/') + 1));
         appointmentDTO.setFrom(appointmentDTO.getFrom().plusHours(1));
         appointmentDTO.setTo(appointmentDTO.getTo().plusHours(1));
-        given().auth().preemptive().basic("customer", "123").when()
+        given().header("Authorization", "Bearer " + customerAccessToken).when()
                 .contentType(ContentType.JSON)
                 .body(appointmentDTO)
                 .post("/api/v1/customer/appointment")
                 .then()
                 .statusCode(201);
-        AppointmentDTO[] foundAppointments = given().auth().preemptive().basic("customer", "123").when()
+        AppointmentDTO[] foundAppointments = given().header("Authorization", "Bearer " + customerAccessToken).when()
                 .get("/api/v1/customer/appointment?merchantId=" + merchantId
                         + "&dateFrom=" + ISO_DATE_TIME.format(ZonedDateTime.now().minusHours(2))
                         + "&dateTo=" + ISO_DATE_TIME.format(ZonedDateTime.now().plusHours(2))
@@ -96,8 +104,8 @@ public class AppointmentTest {
                 .then()
                 .statusCode(200).extract().as(AppointmentDTO[].class);
         assertThat(foundAppointments.length, is(2));
-        assertThat(Stream.of(foundAppointments).allMatch(o -> AppointmentStatus.NEW.name().equals(o.getStatus())), is(true));
-        List timeSlots = given().auth().preemptive().basic("customer", "123").when()
+        assertThat(Stream.of(foundAppointments).allMatch(o -> AppointmentStatus.NEW == o.getStatus()), is(true));
+        List timeSlots = given().header("Authorization", "Bearer " + customerAccessToken).when()
                 .get("/api/v1/availability?serviceId=" + serviceId
                         + "&dateFrom=" + ISO_DATE_TIME.format(ZonedDateTime.now().minusDays(1))
                         + "&dateTo=" + ISO_DATE_TIME.format(ZonedDateTime.now().plusDays(1)))
@@ -106,30 +114,40 @@ public class AppointmentTest {
         assertThat((List<TimeSlotDTO>) timeSlots, Matchers.hasSize(1));
 
         //Appointment get confirmed by service provider
-        given().auth().preemptive().basic("service_provider", "123").when()
+        given().header("Authorization", "Bearer " + merchantAccessToken).when()
                 .contentType(ContentType.JSON)
-                .body(appointmentDTO)
-                .post("/api/v1/merchant/appointment/" + createdAppointmentId + "/confirm")
+                .body("{\"status\": \"CONFIRMED\"}")
+                .patch("api/v1/merchant/appointment/" + createdAppointmentId)
                 .then()
-                .statusCode(201);
-        given().auth().preemptive().basic("customer", "123").when()
+                .statusCode(200);
+        given().header("Authorization", "Bearer " + customerAccessToken).when()
                 .contentType(ContentType.JSON)
                 .body(appointmentDTO)
                 .post("/api/v1/customer/appointment")
                 .then()
                 .statusCode(500);
-        AppointmentDTO confirmedAppointment = given().auth().preemptive().basic("customer", "123").when()
+        AppointmentDTO confirmedAppointment = given().header("Authorization", "Bearer " + customerAccessToken).when()
                 .get("/api/v1/customer/appointment/" + createdAppointmentId)
                 .then()
                 .statusCode(200).extract().as(AppointmentDTO.class);
-        assertThat(confirmedAppointment.getStatus(), is(AppointmentStatus.CONFIRMED.name()));
-        timeSlots = given().auth().preemptive().basic("customer", "123").when()
+        assertThat(confirmedAppointment.getStatus(), is(AppointmentStatus.CONFIRMED));
+        timeSlots = given().header("Authorization", "Bearer " + customerAccessToken).when()
                 .get("/api/v1/availability?serviceId=" + serviceId
                         + "&dateFrom=" + ISO_DATE_TIME.format(ZonedDateTime.now().minusDays(1))
                         + "&dateTo=" + ISO_DATE_TIME.format(ZonedDateTime.now().plusDays(1)))
                 .then()
                 .statusCode(200).extract().as(List.class);
         assertThat((List<TimeSlotDTO>) timeSlots, Matchers.hasSize(2));
+    }
+
+    private String authorize(String username, String password) {
+        JwtAuthenticationResponse jwtAuthenticationResponse = given().when()
+                .param("username", username)
+                .param("password", password)
+                .post("api/v1/user/login")
+                .then().statusCode(200)
+                .extract().as(JwtAuthenticationResponse.class);
+        return jwtAuthenticationResponse.getAccessToken();
     }
 
 }

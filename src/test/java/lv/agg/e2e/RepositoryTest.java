@@ -10,7 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+                "app.jwtSecret=trolololololololololololo",
+                "app.jwtExpirationInMs=5000"
+        })
 @RunWith(SpringRunner.class)
 public class RepositoryTest {
 
@@ -20,7 +25,7 @@ public class RepositoryTest {
     ServiceRepository serviceRepository;
 
     @Test
-    public void adsdasd() {
+    public void testRepositories() {
 //        ServiceEntity s = new ServiceEntity();
 //        s.setName("aaa");
 //        serviceRepository.saveAndFlush(s);
@@ -32,29 +37,29 @@ public class RepositoryTest {
 //        userRepository.saveAndFlush(u);
 
         UserEntity merchant = new UserEntity();
-        merchant.setEmail("merchant@mail.com");
+        merchant.setEmail("merchant1@mail.com");
         merchant.setPassword("123");
         merchant.setUserRole(UserEntity.UserRole.ROLE_MERCHANT);
         userRepository.saveAndFlush(merchant);
 
         UserEntity customer = new UserEntity();
-        customer.setEmail("customer@mail.com");
+        customer.setEmail("customer1@mail.com");
         customer.setPassword("123");
         customer.setUserRole(UserEntity.UserRole.ROLE_CUSTOMER);
         userRepository.saveAndFlush(customer);
 
         ServiceEntity s = new ServiceEntity();
-        s.setName("haircut");
+        s.setName("haircut1");
         s.setId(1L);
         s.setUsers(userRepository.findAll());
         serviceRepository.saveAndFlush(s);
 
-        UserEntity sp = userRepository.findUserWithServicesByEmail("merchant@mail.com").get();
+        UserEntity sp = userRepository.findUserWithServicesByEmail("merchant1@mail.com").get();
         sp.getServices()
                 .forEach(serviceEntity -> {
                     System.out.println(serviceEntity.getId() + " " + serviceEntity.getName());
                 });
-        ServiceEntity hc = serviceRepository.findByName("haircut").get();
+        ServiceEntity hc = serviceRepository.findByName("haircut1").get();
         System.out.println(hc.getName() + " " + hc.getId());
         hc.getUsers()
                 .forEach(userEntity -> {

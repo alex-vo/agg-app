@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Secured("ROLE_ADMIN")
-@RequestMapping("api/v1/service")
+@RequestMapping("api/v1/admin/service")
 @Slf4j
 public class ServiceForAdminController {
 

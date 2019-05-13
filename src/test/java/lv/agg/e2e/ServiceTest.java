@@ -3,6 +3,7 @@ package lv.agg.e2e;
 import com.jayway.restassured.RestAssured;
 import lv.agg.dto.JwtAuthenticationResponse;
 import lv.agg.dto.ServiceDTO;
+import lv.agg.dto.UserProfileDTO;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,10 +11,11 @@ import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 @SpringBootTest(
@@ -32,21 +34,21 @@ public class ServiceTest {
 
     @Test
     public void testCreateService() {
-        String accessToken = authenticate("admin@mail.com", "123");
+        String adminAccessToken = authenticate("admin@mail.com", "123");
 
         ServiceDTO colorServiceDTO = new ServiceDTO();
         colorServiceDTO.setName("color");
 
-        given().header("Authorization", "Bearer " + accessToken).when()
+        given().header("Authorization", "Bearer " + adminAccessToken).when()
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                 .body(colorServiceDTO)
-                .post("/api/v1/service")
+                .post("/api/v1/admin/service")
                 .then()
                 .statusCode(201);
 
-        accessToken = authenticate("merchant@mail.com", "123");
-        ServiceDTO[] services = given().header("Authorization", "Bearer " + accessToken).when()
-                .get("/api/v1/service")
+        String merchantAccessToken = authenticate("merchant@mail.com", "123");
+        ServiceDTO[] services = given().header("Authorization", "Bearer " + merchantAccessToken).when()
+                .get("/api/v1/merchant/service")
                 .then()
                 .statusCode(200)
                 .extract().as(ServiceDTO[].class);
@@ -54,20 +56,26 @@ public class ServiceTest {
                 .filter(s -> "color".equals(s.getName()))
                 .findFirst()
                 .orElseThrow(RuntimeException::new);
-        given().header("Authorization", "Bearer " + accessToken).when()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body("[" + colorServiceDTO.getServiceId() + "]")
-                .post("/api/v1/service/set")
-                .then()
-                .statusCode(200);
-        services = given().header("Authorization", "Bearer " + accessToken).when()
-                .get("/api/v1/service/get")
+
+        UserProfileDTO userProfileDTO = given().header("Authorization", "Bearer " + merchantAccessToken).when()
+                .get("api/v1/profile")
                 .then()
                 .statusCode(200)
-                .extract().as(ServiceDTO[].class);
-        assertThat(services.length, is(1));
-        assertThat(services[0].getName(), is("color"));
-        assertThat(services[0].getServiceId(), is(colorServiceDTO.getServiceId()));
+                .extract().as(UserProfileDTO.class);
+        userProfileDTO.getServiceIds().add(colorServiceDTO.getServiceId());
+        given().header("Authorization", "Bearer " + merchantAccessToken).when()
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .body(userProfileDTO)
+                .put("/api/v1/profile")
+                .then()
+                .statusCode(200);
+        userProfileDTO = given().header("Authorization", "Bearer " + merchantAccessToken).when()
+                .get("/api/v1/profile")
+                .then()
+                .statusCode(200)
+                .extract().as(UserProfileDTO.class);
+        assertThat(userProfileDTO.getServiceIds(), hasSize(2));
+        assertThat(userProfileDTO.getServiceIds(), hasItem(colorServiceDTO.getServiceId()));
     }
 
     private String authenticate(String email, String password) {

@@ -48,12 +48,6 @@ public class UserController {
         log.info("Created profile {}", userProfileDTO.getEmail());
     }
 
-    @PutMapping
-    public void updateProfile(@RequestBody @Valid UserProfileDTO userProfileDTO) {
-        userService.updateProfile(userProfileDTO);
-        log.info("Updated profile {}", userProfileDTO.getEmail());
-    }
-
     @DeleteMapping()
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProfile() {

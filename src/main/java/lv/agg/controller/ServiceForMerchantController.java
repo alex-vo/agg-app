@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @Secured("ROLE_MERCHANT")
-@RequestMapping("api/v1/service")
+@RequestMapping("api/v1/merchant/service")
 @Slf4j
 public class ServiceForMerchantController {
 
